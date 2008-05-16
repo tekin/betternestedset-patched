@@ -129,6 +129,37 @@ module SymetrieCom
           "(#{items.join(' OR ')})"
         end
         
+        # traverse {|current_node, level, relative_level_of_next| block }
+	      #
+	      # Iterates through the nodes in the nested set rooted at the receiver, in a pre-order
+	      # traversal. For each node visited, it yields that node, its level, and the relative level
+	      # of the next node to be visited. The values returned by successive block executions are
+	      # accumulated (in an array by default) and returned at the end
+	      #
+	      # The receiver always has a level of 0.
+	      #
+	      # If relative_level_of_next is 1, the next node is guaranteed to be the first (i.e. leftmost) child
+	      # of the current node
+	      # If it is 0, the next node is the next sibling of the the current node
+	      # Otherwise, relative level is a negative integer, indicating how many levels above the current node
+	      # the next node is
+	      def traverse(accum = [])
+	        level = 0
+	        pre_order_array = complete_set
+	        (pre_order_array.size - 1).times do |i|
+	          curr_node = pre_order_array[i]
+	          next_node = pre_order_array[i + 1]
+	          distance = next_node.lft - curr_node.lft
+	          relative_level_of_next = -1 * (distance - 2)
+	          accum << yield(curr_node, level, relative_level_of_next)
+	          level += relative_level_of_next
+	        end
+	        # Last node is handled differently to the rest: since there is no next node,
+	        # the relative_level_of_next is the number of levels back up to the root level
+	        relative_level_of_next =  - 1 * (pre_order_array.first.rgt -
+	        pre_order_array.last.rgt)
+	        accum << yield(pre_order_array.last, level, relative_level_of_next)
+	      end
       end
 
       # This module provides instance methods for an enhanced acts_as_nested_set mixin. Please see the README for background information, examples, and tips on usage.
